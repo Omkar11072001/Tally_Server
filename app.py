@@ -21,6 +21,7 @@ from fetch_xml_builder import (
     build_fetch_stock_summary_xml,
     build_fetch_vouchers_xml,
 )
+from debit_credit_api import router as debit_credit_router
 
 app = FastAPI(
     title="Tally API",
@@ -29,7 +30,8 @@ app = FastAPI(
 )
 
 TALLY_URL = "http://localhost:9000"
-DEFAULT_COMPANY = "Test Company"
+
+app.include_router(debit_credit_router)
 
 
 @app.get("/health")
@@ -304,9 +306,11 @@ def _clean_stock_summary_item(raw: dict) -> dict:
 
 @app.get("/ledgers")
 async def get_ledgers(
-    company_name: str = Query(..., description="Tally company name"),
+    company_name: str = Query(None, description="Tally company name"),
 ):
     """Fetch all ledger masters from Tally."""
+    if not company_name:
+        raise HTTPException(status_code=400, detail="company_name is required")
     xml_str = build_fetch_ledgers_xml(company_name)
     parsed = await _fetch_from_tally(xml_str)
     if "error" in parsed:
@@ -320,11 +324,13 @@ async def get_ledgers(
 @app.get("/api/ledger/by-gstin/{gstin}")
 async def get_ledger_by_gstin(
     gstin: str,
-    company_name: str = Query(..., description="Tally company name"),
+    company_name: str = Query(None, description="Tally company name"),
     username: str | None = Query(None, description="Tally username"),
     password: str | None = Query(None, description="Tally password"),
 ):
     """Look up a single ledger by its GSTIN (partial or full match)."""
+    if not company_name:
+        raise HTTPException(status_code=400, detail="company_name is required")
     gstin_upper = gstin.strip().upper()
 
     xml_str = build_fetch_ledgers_xml(company_name)
@@ -364,9 +370,11 @@ async def get_ledger_by_gstin(
 
 @app.get("/stock-items")
 async def get_stock_items(
-    company_name: str = Query(..., description="Tally company name"),
+    company_name: str = Query(None, description="Tally company name"),
 ):
     """Fetch all stock items from Tally."""
+    if not company_name:
+        raise HTTPException(status_code=400, detail="company_name is required")
     xml_str = build_fetch_stock_items_xml(company_name)
     parsed = await _fetch_from_tally(xml_str)
     if "error" in parsed:
@@ -379,11 +387,13 @@ async def get_stock_items(
 
 @app.get("/vouchers/purchase")
 async def get_purchase_vouchers(
-    company_name: str = Query(..., description="Tally company name"),
+    company_name: str = Query(None, description="Tally company name"),
     from_date: str = Query(..., description="Start date in YYYYMMDD format"),
     to_date: str = Query(..., description="End date in YYYYMMDD format"),
 ):
     """Fetch purchase vouchers from Tally within a date range."""
+    if not company_name:
+        raise HTTPException(status_code=400, detail="company_name is required")
     xml_str = build_fetch_vouchers_xml(company_name, "Purchase", from_date, to_date)
     parsed = await _fetch_from_tally(xml_str)
     if "error" in parsed:
@@ -396,11 +406,13 @@ async def get_purchase_vouchers(
 
 @app.get("/vouchers/sales")
 async def get_sales_vouchers(
-    company_name: str = Query(..., description="Tally company name"),
+    company_name: str = Query(None, description="Tally company name"),
     from_date: str = Query(..., description="Start date in YYYYMMDD format"),
     to_date: str = Query(..., description="End date in YYYYMMDD format"),
 ):
     """Fetch sales vouchers from Tally within a date range."""
+    if not company_name:
+        raise HTTPException(status_code=400, detail="company_name is required")
     xml_str = build_fetch_vouchers_xml(company_name, "Sales", from_date, to_date)
     parsed = await _fetch_from_tally(xml_str)
     if "error" in parsed:
@@ -413,11 +425,13 @@ async def get_sales_vouchers(
 
 @app.get("/api/stock-summary")
 async def get_stock_summary(
-    company_name: str = Query(..., description="Tally company name"),
+    company_name: str = Query(None, description="Tally company name"),
     username: str | None = Query(None, description="Tally username"),
     password: str | None = Query(None, description="Tally password"),
 ):
     """Fetch stock-in-hand (closing balance) for all stock items."""
+    if not company_name:
+        raise HTTPException(status_code=400, detail="company_name is required")
     xml_str = build_fetch_stock_summary_xml(company_name)
     parsed = await _fetch_from_tally(xml_str)
     if "error" in parsed:
